@@ -12,6 +12,8 @@ import java.net.Socket;
 import java.net.InetAddress;
 import java.lang.Thread;
 import java.util.Random;
+import java.util.LinkedList;
+import java.awt.Point;
 
 public class Battleship {
 	public static String API_KEY = "72091250"; ///////// PUT YOUR API KEY HERE /////////
@@ -22,6 +24,15 @@ public class Battleship {
 	char[] letters;
 	int[][] grid;
 	boolean[] ourGrid;
+	int[] ships;
+
+	LinkedList<Point> hits = new LinkedList<Point>();
+
+	// Destroyer - 2
+	// Submarine - 3
+	// Cruiser - 3
+	// Battleship - 4
+	// Carrier - 5
 
 	void placeShips(String opponentID) {
 		// Fill Grid With -1s
@@ -126,24 +137,111 @@ public class Battleship {
 		return result;
 	}
 
-
+	int turn = 0;
 
 	void makeMove() {
+
+		System.out.println("turn: " + turn);
+		turn++;
+
+		System.out.println("empty?:" + hits.isEmpty());
+		while (!hits.isEmpty()) {
+			Point p = hits.peek();
+
+			try { if (grid[p.x-1][p.y] == -1) { sendMove(p.x-1, p.y); return; } } catch (Exception e) {}
+			try { if (grid[p.x+1][p.y] == -1) { sendMove(p.x+1, p.y); return; } } catch (Exception e) {}
+			try { if (grid[p.x][p.y-1] == -1) { sendMove(p.x, p.y-1); return; } } catch (Exception e) {}
+			try { if (grid[p.x][p.y+1] == -1) { sendMove(p.x, p.y+1); return; } } catch (Exception e) {}
+
+			hits.remove();
+		}
+
+
+		int x = 0, y = 0;
+		int max = 0;
+
+		
+		//numberShipsCanFit(0, 0);
+		//numberShipsCanFit(0, 1);
+		//numberShipsCanFit(1, 0);
+
 		for(int i = 0; i < 8; i++) {
 			for(int j = 0; j < 8; j++) {
 				if (this.grid[i][j] == -1) {
-					String wasHitSunkOrMiss = placeMove(this.letters[i] + String.valueOf(j));
-
-					if (wasHitSunkOrMiss.equals("Hits") || 
-							wasHitSunkOrMiss.equals("Sunk")) {
-						this.grid[i][j] = 1;
-					} else {
-						this.grid[i][j] = 0;			
+					int temp = numberShipsCanFit(i, j);
+					if (temp > max) {
+						x = i;
+						y = j;
+						max = temp;
 					}
-					return;
 				}
 			}
 		}
+
+		sendMove(x, y);
+		System.out.println("Made move: " + x + "," + y);
+
+		/*int x = 0, y = 0;
+
+		for(int i = 0; i < 8; i++) {
+			for(int j = 0; j < 8; j++) {
+				if (this.grid[i][j] == -1) {
+					x = i;
+					y = j;
+					sendMove(x,y);
+					return;
+				}
+			}
+		}*/
+	}
+
+	private void sendMove(int x, int y) {
+		String wasHitSunkOrMiss = placeMove(this.letters[x] + String.valueOf(y));
+		System.out.println("Got from placing: " + wasHitSunkOrMiss);
+
+		if (wasHitSunkOrMiss.equals("Hit")) {
+			this.grid[x][y] = 1;
+			hits.add(new Point(x, y));
+		} else if (wasHitSunkOrMiss.equals("Sunk")) {
+			this.grid[x][y] = 2;
+			hits.add(new Point(x, y));
+		} else {
+			this.grid[x][y] = 0;			
+		}
+	}
+
+	private int numberShipsCanFit(int x, int y) {
+		int spaceLeft = 0;
+		for (int i = x-1; (i >= 0) && (this.grid[i][y] != 0); i--) {
+			spaceLeft++;
+		}
+		int spaceRight = 0;
+		for (int i = x+1; (i < this.grid.length) && (this.grid[i][y] == -1); i++) {
+			spaceRight++;
+		}
+		int spaceUp = 0;
+		for (int i = y-1; (i >= 0) && (this.grid[x][i] == -1); i--) {
+			spaceUp++;
+		}
+		int spaceDown = 0;
+		for (int i = y+1; (i < this.grid.length) && (this.grid[x][i] == -1); i++) {
+			spaceDown++;
+		}
+
+		//System.out.println("  " + spaceUp + "  ");
+		//System.out.println(spaceLeft+" x " + spaceRight);
+		//System.out.println("  " + spaceDown + "  ");
+
+		int total = 0;
+		//System.out.println("testing for " + x + "," + y);
+
+		for (int i = 0; i <ships.length; i++) {
+			int horz = Math.min(spaceLeft, ships[i]-1) + Math.min(spaceRight, ships[i]-1) + 1;
+			int vert = Math.min(spaceUp, ships[i]-1) + Math.min(spaceDown, ships[i]-1) + 1;
+			total += Math.max((horz - ships[i] + 1), 0);
+			total += Math.max((vert - ships[i] + 1), 0);
+		}
+		return total;		
 	}
 
 	////////////////////////////////////// ^^^^^ PUT YOUR CODE ABOVE HERE ^^^^^ //////////////////////////////////////
@@ -161,6 +259,7 @@ public class Battleship {
 		this.grid = new int[8][8];
 		for(int i = 0; i < grid.length; i++) { for(int j = 0; j < grid[i].length; j++) grid[i][j] = -1; }
 		this.letters = new char[] {'A','B','C','D','E','F','G','H'};
+		this.ships = new int[] {2,3,3,4,5};
 
 		destroyer = new String[] {"A0", "A0"};
 		submarine = new String[] {"A0", "A0"};
