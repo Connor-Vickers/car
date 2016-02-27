@@ -11,27 +11,122 @@ import java.io.*;
 import java.net.Socket;
 import java.net.InetAddress;
 import java.lang.Thread;
+import java.util.Random;
 
 public class Battleship {
-	public static String API_KEY = "API_KEY_HERE"; ///////// PUT YOUR API KEY HERE /////////
+	public static String API_KEY = "72091250"; ///////// PUT YOUR API KEY HERE /////////
 	public static String GAME_SERVER = "battleshipgs.purduehackers.com";
 
 	//////////////////////////////////////  PUT YOUR CODE HERE //////////////////////////////////////
 
 	char[] letters;
 	int[][] grid;
+	boolean[] ourGrid;
 
 	void placeShips(String opponentID) {
 		// Fill Grid With -1s
 		for(int i = 0; i < grid.length; i++) { for(int j = 0; j < grid[i].length; j++) grid[i][j] = -1; }
+		ourGrid = new boolean[64];
+		for(int i = 0; i < ourGrid.length; i++){ ourGrid[i] = false; }
 
 		// Place Ships
-		placeDestroyer("A0", "A1");
-		placeSubmarine("B0", "B2");
-		placeCruiser("C0", "C2");
-		placeBattleship("D0", "D3");
-		placeCarrier("E0", "E4");
+		String[] temp;
+		temp = placeEm(2);
+		placeDestroyer(temp[0], temp[1]);
+		temp = placeEm(3);
+		placeSubmarine(temp[0], temp[1]);
+		temp = placeEm(3);
+		placeCruiser(temp[0], temp[1]);
+		temp = placeEm(4);
+		placeBattleship(temp[0], temp[1]);
+		temp = placeEm(5);
+		placeCarrier(temp[0], temp[1]);
 	}
+
+	String[] placeEm(int size){
+		Random rn = new Random();
+		boolean validPos = false;
+		int[] places = new int[size];
+		while(!validPos){
+			places[0] = rn.nextInt(64);
+			switch(rn.nextInt(4)){
+				case 0://up
+					for(int i = 1; i < size ; i++){
+						places[i] = places[i-1]-8;
+					}
+					break;
+				case 1://right
+					for(int i = 1; i < size ; i++){
+						places[i] = places[i-1]+1;
+					}
+					break;
+				case 2://down
+					for(int i = 1; i < size ; i++){
+						places[i] = places[i-1]+8;
+					}
+					break;
+				case 3://left
+					for(int i = 1; i < size ; i++){
+						places[i] = places[i-1]-1;
+					}
+					break;
+			}
+
+		    validPos = true;
+			for(int i = 0; i < size; i++){
+				if(places[i] < 0 || places[i] > 63){
+					validPos = false;
+				}
+			}
+			if(validPos){
+				for(int i = 0; i < size; i++){
+					if(ourGrid[places[i]]){
+						validPos = false;
+					}
+				}
+			}
+			boolean right = false;
+			boolean left = false;
+
+			if(validPos){
+				for(int i = 0; i < size; i++){
+					if((places[i] % 8) == 0){
+						left = true;
+					}
+					if((places[i] % 8) == 7){
+						right = true;
+					}
+				}
+			}
+			if(left && right){
+				validPos = false;
+			}
+		}
+		//update our grid
+		for(int i = 0; i < size; i++){
+			ourGrid[places[i]] = true;
+		}
+		//return
+		String[] ret = new String[2];
+		ret[0] = placeToString(places[0]);
+		ret[1] = placeToString(places[places.length-1]);
+		/*for(int i = 0; i < size; i++){
+			System.out.println(""+places[i]);
+		}
+		System.out.println(ret[0]+" "+ret[1]);*/
+
+		return ret;
+	}
+
+	String placeToString(int place){
+			int row = place % 8;
+			int col = place / 8;
+			char colC = (char) (col + 65);
+			String result = String.valueOf(colC) + Integer.toString(row);
+		return result;
+	}
+
+
 
 	void makeMove() {
 		for(int i = 0; i < 8; i++) {
@@ -60,7 +155,7 @@ public class Battleship {
 	String data;
 	BufferedReader br;
 	PrintWriter out;
-	Boolean moveMade = False;
+	Boolean moveMade = false;
 
 	public Battleship() {
 		this.grid = new int[8][8];
@@ -145,7 +240,7 @@ public class Battleship {
 				this.out.print(carrier[1]);
 				out.flush();
 			} else if (data.contains( "Enter")) {
-				this.moveMade = False;
+				this.moveMade = false;
 				this.makeMove();
 			} else if (data.contains("Error" )) {
 				System.out.println("Error: " + data);
@@ -185,7 +280,7 @@ public class Battleship {
 			System.out.println("Error: Please Make Only 1 Move Per Turn.");
 			System.exit(1); // Close Client
 		}
-		this.moveMade = True;
+		this.moveMade = true;
 
 		this.out.print(pos);
 		out.flush();
@@ -193,7 +288,7 @@ public class Battleship {
 		catch(Exception e) { System.out.println("No response after from the server after place the move"); }
 
 		if (data.contains("Hit")) return "Hit";
-		else if (data.contains("Sunk")) return "Sun";
+		else if (data.contains("Sunk")) return "Sunk";
 		else if (data.contains("Miss")) return "Miss";
 		else {
 			this.dataPassthrough = data;
