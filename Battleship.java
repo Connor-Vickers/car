@@ -25,6 +25,7 @@ public class Battleship {
 	int[][] grid;
 	boolean[] ourGrid;
 	int[] ships;
+	int turn = 0;
 
 	LinkedList<Point> hits = new LinkedList<Point>();
 
@@ -39,6 +40,8 @@ public class Battleship {
 		for(int i = 0; i < grid.length; i++) { for(int j = 0; j < grid[i].length; j++) grid[i][j] = -1; }
 		ourGrid = new boolean[64];
 		for(int i = 0; i < ourGrid.length; i++){ ourGrid[i] = false; }
+		hits = new LinkedList<Point>();
+		turn = 0;
 
 		// Place Ships
 		String[] temp;
@@ -137,8 +140,6 @@ public class Battleship {
 		return result;
 	}
 
-	int turn = 0;
-
 	void makeMove() {
 
 		System.out.println("turn: " + turn);
@@ -201,10 +202,10 @@ public class Battleship {
 
 		if (wasHitSunkOrMiss.equals("Hit")) {
 			this.grid[x][y] = 1;
-			hits.add(new Point(x, y));
+			hits.addFirst(new Point(x, y));
 		} else if (wasHitSunkOrMiss.equals("Sunk")) {
 			this.grid[x][y] = 2;
-			hits.add(new Point(x, y));
+			hits.addFirst(new Point(x, y));
 		} else {
 			this.grid[x][y] = 0;			
 		}
